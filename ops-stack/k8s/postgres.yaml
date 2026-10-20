@@ -1,0 +1,75 @@
+# PostgreSQL for order tracking. One replica, data on a PersistentVolumeClaim.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: telecom-lab
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-auth
+  namespace: telecom-lab
+type: Opaque
+stringData:
+  password: lab-only-change-me
+  url: postgresql://simgen:lab-only-change-me@postgres:5432/orders
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pgdata
+  namespace: telecom-lab
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: telecom-lab
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # never two database pods on the same data
+  selector:
+    matchLabels: {app: postgres}
+  template:
+    metadata:
+      labels: {app: postgres}
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - {name: POSTGRES_DB, value: orders}
+            - {name: POSTGRES_USER, value: simgen}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: postgres-auth, key: password}}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "simgen", "-d", "orders"]
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {memory: 512Mi}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: pgdata}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: telecom-lab
+spec:
+  selector: {app: postgres}
+  ports:
+    - port: 5432

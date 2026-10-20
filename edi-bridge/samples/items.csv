@@ -1,0 +1,4 @@
+customer_code,buyer_part,vendor_part,item,description
+MNO-NORTH,MN-SIM-0128,UICC-TRIO-128K,UICC-TRIO-128K,Triple-cut UICC 128K physical SIM
+MNO-NORTH,MN-ESIM-A01,ESIM-PROF-A,ESIM-PROF-A,eSIM profile type A (remote provisioning)
+MNO-SOUTH,ST-USIM-128,UICC-TRIO-128K,UICC-TRIO-128K,Triple-cut UICC 128K physical SIM

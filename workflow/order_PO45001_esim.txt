@@ -1,0 +1,15 @@
+*HEADER
+Customer: MNO-NORTH
+Order_ID: ORD-20261020-0012
+PO_Ref: PO45001
+Quantity: 1000
+Type: ESIM-PROF-A
+Profile: NORTH_ESIM_V1
+Batch: E26102012
+Transport_Key_ID: TK01
+SLA_Hours: 24
+SMDP_Address: smdp.lab.example
+*RANGES
+ICCID_Start: 890010100006000001
+IMSI_Start: 001010006000001
+*END

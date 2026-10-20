@@ -1,0 +1,31 @@
+# Run the order database on Oracle instead of PostgreSQL.
+#
+#   docker compose -f compose.yaml -f compose.oracle.yaml up -d --build
+#
+# This file is merged on top of compose.yaml: it adds an Oracle Database Free
+# container and points the workers at it. PostgreSQL still starts but sits idle.
+# Oracle takes a minute or two to be ready; the workers wait for it.
+# LAB ONLY password; override it with ORACLE_PASSWORD in a .env file.
+
+services:
+  oracle:
+    image: gvenzl/oracle-free:23-slim-faststart
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-LabOnly-Oracle-1}
+      APP_USER: simgen
+      APP_USER_PASSWORD: ${ORACLE_PASSWORD:-LabOnly-Oracle-1}
+    ports:
+      - "127.0.0.1:1521:1521"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  worker:
+    depends_on:
+      oracle:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: oracle://simgen:${ORACLE_PASSWORD:-LabOnly-Oracle-1}@oracle:1521/FREEPDB1

@@ -1,0 +1,86 @@
+<dashboard version="1.1" theme="light">
+  <label>Profile Generation Operations</label>
+  <description>Orders, failures and SLA risk from simgen events (lab data).</description>
+  <fieldset submitButton="false">
+    <input type="time" token="t">
+      <label>Time range</label>
+      <default><earliest>-24h@h</earliest><latest>now</latest></default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Orders received</title>
+      <single>
+        <search><query>index=main sourcetype=_json event=order_received | stats dc(order_id) as received</query>
+          <earliest>$t.earliest$</earliest><latest>$t.latest$</latest></search>
+      </single>
+    </panel>
+    <panel>
+      <title>Orders delivered</title>
+      <single>
+        <search><query>index=main sourcetype=_json event=order_completed | stats dc(order_id) as delivered</query>
+          <earliest>$t.earliest$</earliest><latest>$t.latest$</latest></search>
+      </single>
+    </panel>
+    <panel>
+      <title>Failed or rejected</title>
+      <single>
+        <search><query>index=main sourcetype=_json event IN (order_failed, order_rejected) | stats count as failures</query>
+          <earliest>$t.earliest$</earliest><latest>$t.latest$</latest></search>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Open orders and hours left to SLA</title>
+      <table>
+        <search><query>index=main sourcetype=_json event IN (order_received, order_completed, order_failed)
+| stats latest(event) as last_event, latest(due_at) as due_at, values(customer) as customer, values(batch) as batch by order_id
+| where last_event="order_received"
+| eval hours_left=round((strptime(due_at, "%Y-%m-%dT%H:%M:%SZ") - now()) / 3600, 1)
+| sort hours_left
+| table order_id customer batch due_at hours_left</query>
+          <earliest>-7d</earliest><latest>now</latest></search>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Failures by error code</title>
+      <chart>
+        <search><query>index=main sourcetype=_json event IN (order_failed, order_rejected) | stats count by error_code | sort - count</query>
+          <earliest>$t.earliest$</earliest><latest>$t.latest$</latest></search>
+        <option name="charting.chart">bar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Pipeline events over time</title>
+      <chart>
+        <search><query>index=main sourcetype=_json event IN (order_received, order_completed, order_failed, order_rejected) | timechart span=1h count by event</query>
+          <earliest>$t.earliest$</earliest><latest>$t.latest$</latest></search>
+        <option name="charting.chart">column</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Processing time by customer (ms)</title>
+      <table>
+        <search><query>index=main sourcetype=_json event=order_completed
+| stats count as orders, sum(quantity) as cards, avg(duration_ms) as avg_ms, perc95(duration_ms) as p95_ms, sum(eval(if(sla_met="false",1,0))) as sla_breaches by customer
+| eval avg_ms=round(avg_ms)</query>
+          <earliest>$t.earliest$</earliest><latest>$t.latest$</latest></search>
+      </table>
+    </panel>
+    <panel>
+      <title>Worker health</title>
+      <table>
+        <search><query>index=main sourcetype=_json event IN (worker_started, worker_error, claim_requeued) | stats count, latest(_time) as last_seen by node, event | convert ctime(last_seen)</query>
+          <earliest>$t.earliest$</earliest><latest>$t.latest$</latest></search>
+      </table>
+    </panel>
+  </row>
+</dashboard>

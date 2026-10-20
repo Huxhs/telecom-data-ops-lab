@@ -1,0 +1,12 @@
+{
+  "order_id": "ORD-20261019-0001",
+  "customer": "MNO-NORTH",
+  "po_number": "PO45001",
+  "batch": "B26101901",
+  "product": "UICC-TRIO-128K",
+  "quantity": 500,
+  "iccid_first": "8900101000000000019",
+  "iccid_last": "8900101000000005000",
+  "generated_at": "2026-10-19T14:00:00Z",
+  "output_file": "MNO-NORTH_B26101901.out"
+}

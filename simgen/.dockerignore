@@ -1,0 +1,6 @@
+tests
+**/__pycache__
+*.db
+*.log
+out
+data

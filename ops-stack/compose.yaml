@@ -1,0 +1,80 @@
+# Mini "data center" for the lab:
+#   operator --SFTP--> inbox --> simgen workers --> outbox --SFTP--> operator
+#                                   |      |
+#                             PostgreSQL   events.log --> Splunk (optional profile)
+#
+# Start:            docker compose up -d --build
+# Scale workers:    docker compose up -d --scale worker=3
+# With Splunk:      docker compose --profile splunk up -d
+name: telecom-data-ops-lab
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: simgen
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lab-only-change-me}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"   # localhost only, for psql practice
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simgen -d orders"]
+      interval: 5s
+      retries: 10
+
+  # One-shot job: creates LAB ONLY keys inside a volume if they do not exist yet.
+  # Keys never touch your laptop's disk outside Docker.
+  keygen:
+    build: ../simgen
+    image: simgen:lab
+    command: ["sh", "-c", "test -f /keys/lab-keys.json || simgen init-keys /keys/lab-keys.json"]
+    volumes:
+      - keys:/keys
+
+  worker:
+    image: simgen:lab
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keygen:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://simgen:${POSTGRES_PASSWORD:-lab-only-change-me}@postgres:5432/orders
+    volumes:
+      - exchange:/data
+      - logs:/logs
+      - keys:/keys:ro
+    restart: unless-stopped
+
+  # The operator's side: an SFTP drop box. Their files land in exchange/inbox.
+  sftp:
+    image: atmoz/sftp:alpine
+    depends_on:
+      - worker          # the worker image creates the folders with the right owner first
+    command: "mno:${SFTP_PASSWORD:-lab-only-sftp}:1001:1001"
+    ports:
+      - "127.0.0.1:2222:22"
+    volumes:
+      - exchange:/home/mno/exchange
+
+  splunk:
+    profiles: ["splunk"]
+    image: splunk/splunk:9.4.1
+    platform: linux/amd64     # Splunk ships x86 images; Apple silicon runs them under Rosetta
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:-LabOnly-Splunk-1}
+      SPLUNK_ADD: monitor /var/log/simgen/events.log -index main -sourcetype _json
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - logs:/var/log/simgen:ro
+
+volumes:
+  pgdata:
+  exchange:
+  logs:
+  keys:

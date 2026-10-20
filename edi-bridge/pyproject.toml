@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edi-bridge"
+version = "0.1.0"
+description = "Learning project: ANSI X12 850/855/856/997 between a customer and a SyteLine-style ERP"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []  # standard library only at runtime
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+edi-bridge = "edi_bridge.cli:main"
+
+[tool.setuptools]
+packages = ["edi_bridge"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
