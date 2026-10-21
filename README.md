@@ -35,6 +35,7 @@ LAB ONLY keys, made-up partners and part numbers.
 | [`drills/`](drills/) | Nine break-it-on-purpose incident drills with ITIL incident, problem and change templates and worked examples | |
 | [`WORKFLOW.md`](WORKFLOW.md) | One order through the whole lab in about two hours, like one shift on the job | |
 | [`MISSIONS.md`](MISSIONS.md) | The lab as a data engineer's week: morning checks, orders, eSIM, bad files, EDI, Oracle, Kubernetes, incidents, handover | |
+| [`lab-guide/`](lab-guide/) | My own run of WORKFLOW.md on a MacBook Pro, with screenshots: what I did, what broke and what I learned | |
 
 ## How it maps to a data-generation operations role
 

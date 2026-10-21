@@ -71,7 +71,7 @@
       <table>
         <search><query>index=main sourcetype=_json event=order_completed
 | stats count as orders, sum(quantity) as cards, avg(duration_ms) as avg_ms, perc95(duration_ms) as p95_ms, sum(eval(if(sla_met="false",1,0))) as sla_breaches by customer
-| eval avg_ms=round(avg_ms)</query>
+| eval avg_ms=round(avg_ms), p95_ms=round(p95_ms)</query>
           <earliest>$t.earliest$</earliest><latest>$t.latest$</latest></search>
       </table>
     </panel>
